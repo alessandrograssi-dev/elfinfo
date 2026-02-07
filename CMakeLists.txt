@@ -6,6 +6,8 @@ set (SRC
     src/main.cpp
 )
 
+include_directories(include)
+
 add_executable(elfinfo ${SRC})
 
 target_compile_features(elfinfo PRIVATE cxx_std_17)
