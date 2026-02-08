@@ -1,13 +1,21 @@
 #include <iostream>
 #include "CliOptions.hpp"
+#include "ElfParser.hpp"
+
+using elf::ElfParser;
 
 int main(int argc, char* argv[]) {
     try {
         CliOptions opts = CliOptions::parse_arguments(argc, argv);
 
-        std::cout << "Inspecting file: " << opts.filename << "\n";
-        // TODO: ELF parsing logic
-
+        ElfParser parser(opts.filename);
+        if (opts.show_headers) {
+            parser.read_headers();
+        }
+        if (opts.show_sections) {
+            parser.read_sections();
+        }
+        
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;

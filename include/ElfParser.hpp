@@ -1,5 +1,6 @@
 #pragma once
 #include "BinaryReader.hpp"
+#include "ElfHeader.hpp"
 #include <string>
 
 namespace elf {
@@ -12,5 +13,9 @@ namespace elf {
 
   private:
       BinaryReader m_binReader;
+
+      void parse_e_ident(ElfHeader& header);
+      void parse_header_body(ElfHeader& header);
+      void print_header(const ElfHeader& header) const;
   };
 }

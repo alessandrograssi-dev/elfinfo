@@ -10,7 +10,12 @@ class BinaryReader {
     template<typename T>
     T byteswap(T value);
 
-public:
+public: 
+    enum class Endianness {
+        LittleEndian    = 1,
+        BigEndian       = 2
+    };
+
     explicit BinaryReader(const std::string& filename)
       : m_file(filename, std::ios::in | std::ios::binary) {
         if (!m_file.is_open()) 
@@ -31,25 +36,39 @@ public:
         m_file.seekg(offset, std::ios::beg);
     }
 
-    // Reads little-endian values assuming host is little-endian.
+    // Reads integral values and applies endianness if needed
     // Endianness handling will be extended in later commits.
     template<typename T>
-    bool read_le(T& ui) {
+    bool read(T& ui) {
         static_assert(std::is_integral_v<T>,
                   "Error: read_le only supports integral types");
 
-        m_file.read(reinterpret_cast<char*>(&ui), sizeof(T));
-        if (!m_file.good()) {
+        
+        if (!read_bytes(reinterpret_cast<char*>(&ui), sizeof(T))) {
           return false;
         }
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        value = byteswap(ui);
-#endif
+        // if (m_endianness == Endianness::BigEndian)
+            // ui = byteswap(ui); To do
         return true;
     }
 
+    bool read_bytes(char *buffer, std::size_t size) {
+        m_file.read(buffer, size);
+        if (m_file.good())
+            return true;
+        return false;
+    }
+
+    inline void reset() {
+        seek(0);
+    }
+
+    inline void set_endianness(Endianness e) {
+        m_endianness = e;
+    }
 
 private:
     std::ifstream m_file;
     std::uint64_t m_size {0};
+    Endianness m_endianness { Endianness::LittleEndian };
 };
