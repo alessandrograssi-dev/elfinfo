@@ -8,10 +8,10 @@ struct CliOptions {
     bool show_headers = false;
     bool show_sections = false;
 
-    static inline CliOptions parse_arguments(int argc, char* argv[]);
+    static inline CliOptions parse_arguments(int argc, char* const argv[]);
 };
 
-inline CliOptions CliOptions::parse_arguments(int argc, char* argv[]) {
+inline CliOptions CliOptions::parse_arguments(int argc, char* const argv[]) {
     if (argc == 2) {
         std::string arg = argv[1];
         if (arg == "--help" || arg == "-h") {
