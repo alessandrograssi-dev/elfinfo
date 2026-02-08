@@ -4,6 +4,7 @@
 #include <memory>
 #include <iomanip>
 #include <sstream>
+#include <cassert>
 
 namespace elf {
     ElfParser::ElfParser(const std::string& path)
@@ -79,8 +80,14 @@ namespace elf {
 
         if (!m_binReader.read(h.e_flags))
             throw std::runtime_error("Error while reading e_flags");
+
         if (!m_binReader.read(h.e_ehsize))
             throw std::runtime_error("Error while reading e_ehsize");
+        if (h.e_class == ElfClass::Elf32)
+            assert(h.e_ehsize == 52);
+        else
+            assert(h.e_ehsize == 64);
+            
         if (!m_binReader.read(h.e_phentsize))
             throw std::runtime_error("Error while reading e_phentsize");
         if (!m_binReader.read(h.e_phnum))

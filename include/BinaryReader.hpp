@@ -8,7 +8,17 @@
 
 class BinaryReader {
     template<typename T>
-    T byteswap(T value);
+    T byteswap(T value) {
+        static_assert(std::is_integral_v<T>, "byteswap only supports integral types");
+
+        T result = 0;
+        for (size_t i = 0; i < sizeof(T); ++i) {
+            result <<= 8;
+            result |= (value & 0xFF);
+            value >>= 8;
+        }
+        return result;
+    }
 
 public: 
     enum class Endianness {
@@ -47,8 +57,8 @@ public:
         if (!read_bytes(reinterpret_cast<char*>(&ui), sizeof(T))) {
           return false;
         }
-        // if (m_endianness == Endianness::BigEndian)
-            // ui = byteswap(ui); To do
+        if (m_machine_endianness != m_file_endianness)
+            ui = byteswap(ui); 
         return true;
     }
 
@@ -64,11 +74,20 @@ public:
     }
 
     inline void set_endianness(Endianness e) {
-        m_endianness = e;
+        m_file_endianness = e;
     }
 
 private:
     std::ifstream m_file;
     std::uint64_t m_size {0};
-    Endianness m_endianness { Endianness::LittleEndian };
+    Endianness m_file_endianness { Endianness::LittleEndian };
+    Endianness m_machine_endianness {host_is_little_endian()};
+
+    constexpr Endianness host_is_little_endian() {
+        uint16_t x = 1;
+        if (*reinterpret_cast<uint8_t*>(&x) == 1) {
+            return Endianness::LittleEndian;
+        }
+        return Endianness::BigEndian;
+    }
 };
