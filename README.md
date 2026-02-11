@@ -1,67 +1,106 @@
-# elfinfo
+# ELFInfo --- A Native ELF Binary Inspector in C++
 
-**A modern C++ binary file inspection tool**
+[![C++](https://img.shields.io/badge/lang-C++17-blue.svg)](https://isocpp.org/)\
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-`elfinfo` is a small, focused project aimed at inspecting and understanding
-binary file formats from a low-level perspective.
+A lightweight ELF file inspector written in modern C++, inspired by
+tools like `readelf` and `objdump`.
 
-The primary goal of this project is not to replace existing tools, but to
-demonstrate **clean software design**, **safe handling of binary data**, and
-**incremental development of a non-trivial system** using modern C++.
+This project parses and displays key parts of the ELF (Executable and
+Linkable Format), including:
 
----
+-   ELF header
+-   Section headers
+-   Program headers
+-   Section ↔ Segment mapping
 
-## Motivation
+It supports both 32‑bit and 64‑bit ELF formats and handles endianness
+correctly.
 
-Binary file formats (such as ELF executables) are foundational to operating
-systems, compilers, and toolchains, yet they are often treated as opaque blobs.
+------------------------------------------------------------------------
 
-This project explores how to:
-- safely parse binary data without undefined behavior,
-- design layered abstractions for low-level systems programming,
-- build a robust command-line tool with clear responsibilities,
-- incrementally add features while maintaining correctness.
+## 🧠 Motivation
 
-The project is developed with the same discipline used in production systems:
-clear boundaries, testability, and explicit design decisions.
+ELF (Executable and Linkable Format) is the standard binary format on
+Unix‑like systems (Linux, BSD, etc.).
 
----
+This project is a pedagogical reimplementation in **pure C++** to:
 
-## Scope
+✔ Understand low‑level binary layout\
+✔ Learn endianness, ABI differences, and file parsing\
+✔ Build your own inspection tools\
+✔ Demonstrate systems programming skills
 
-Planned capabilities include:
-- inspecting executable and object file metadata,
-- validating binary structure and headers,
-- providing readable, structured output via a CLI,
-- supporting streaming-safe and bounds-checked parsing.
+------------------------------------------------------------------------
 
-This project intentionally avoids:
-- reimplementing full system toolchains,
-- relying on platform-specific hacks,
-- premature optimization.
+## 🛠 Features
 
----
+  Feature                      Status
+  ---------------------------- --------------
+  ELF Header Parsing           ✅
+  Section Header Table         ✅
+  Program Header Table         ✅
+  Section ↔ Segment Mapping    ✅
+  CLI Interface                ✅
+  Supports 32 & 64‑bit         ✅
+  Endianness Awareness         ✅
+  Dynamic Sections / Symbols   🚧 (Planned)
 
-## Status
+------------------------------------------------------------------------
 
-🚧 **Work in progress**
+## 📦 Build
 
-This repository is under active development.  
-Features, structure, and documentation will evolve incrementally.
+Requires a C++17‑compatible compiler:
 
----
+``` bash
+git clone https://github.com/alessandrograssi-dev/elfinfo.git
+cd elfinfo
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
 
-## Why this project exists
+------------------------------------------------------------------------
 
-This project serves both as:
-- a practical systems programming exercise, and
-- a demonstration of modern C++ design applied to low-level problems.
+## 📌 Usage
 
-It is written with clarity, correctness, and maintainability as first-class
-concerns.
+``` bash
+./elfinfo <filename> [options]
+```
 
----
+Example:
 
-## License
+``` bash
+./elfinfo /bin/ls --headers --section-headers --program-headers
+```
 
-License information will be added once the project structure stabilizes.
+------------------------------------------------------------------------
+
+## 🧩 How It Works
+
+1.  Reads the ELF header to determine format (32/64 bit + endianness)
+2.  Parses section headers
+3.  Parses program headers
+4.  Maps sections to segments based on offset ranges
+5.  Prints formatted tables similar to `readelf`
+
+------------------------------------------------------------------------
+
+## 🚀 Why This Is Interesting
+
+This project demonstrates:
+
+✔ Low‑level file I/O\
+✔ Safe binary parsing in C++\
+✔ Template-based typed reads\
+✔ Endianness handling\
+✔ Understanding of executable internals
+
+Ideal for systems programming, compiler tooling, or infrastructure
+roles.
+
+------------------------------------------------------------------------
+
+## 📜 License
+
+MIT License. 
