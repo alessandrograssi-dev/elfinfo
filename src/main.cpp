@@ -18,6 +18,9 @@ int main(int argc, char* argv[]) {
         if (opts.show_sections) {
             parser.read_sections();
         }
+        if (opts.show_program_headers) {
+            parser.read_program_headers();
+        }
         
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

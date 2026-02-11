@@ -8,7 +8,8 @@ struct CliOptions {
     bool show_headers = false;
     bool show_sections = false;
     bool show_section_headers = false;
-
+    bool show_program_headers = false;
+    
     static inline CliOptions parse_arguments(int argc, char* const argv[]);
 };
 
@@ -35,6 +36,8 @@ inline CliOptions CliOptions::parse_arguments(int argc, char* const argv[]) {
             opts.show_sections = true;
         } else if (arg == "--section-headers" || arg == "-SH") {
             opts.show_section_headers = true;
+        } else if (arg == "--program-headers" || arg == "-PH") {
+            opts.show_program_headers = true;
         } else {
             throw std::runtime_error("Unknown option: " + arg);
         }
