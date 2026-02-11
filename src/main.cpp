@@ -10,7 +10,10 @@ int main(int argc, char* argv[]) {
 
         ElfParser parser(opts.filename);
         if (opts.show_headers) {
-            parser.read_headers();
+            parser.read_header();
+        }
+        if (opts.show_section_headers) {
+            parser.read_section_headers();
         }
         if (opts.show_sections) {
             parser.read_sections();

@@ -5,21 +5,34 @@
 #include <iomanip>
 #include <sstream>
 #include <cassert>
+#include <ios>
 
 namespace elf {
     ElfParser::ElfParser(const std::string& path)
-        : m_binReader(path)
-    {}
+        : m_binReader(path) {
+		parse_header();
+	}
 
-    void ElfParser::read_headers() {
-        ElfHeader header{};
-        parse_e_ident(header);
-        parse_header_body(header);
-        print_header(header);
+    void ElfParser::read_header() {
+        print_header(m_header);
     }
 
+	void ElfParser::read_section_headers() {
+		std::vector<ElfSectionHeader> s_headers = parse_section_headers();
+		print_section_headers(s_headers);
+	}
+
     void ElfParser::read_sections() {
-        // TODO: implement
+		// TODO
+    }
+
+    void ElfParser::parse_header() {
+		if (m_header_parsed)
+			return;
+
+        parse_e_ident(m_header);
+        parse_header_body(m_header);
+		m_header_parsed = true;
     }
 
     void ElfParser::parse_e_ident(ElfHeader& h) {
@@ -93,7 +106,7 @@ namespace elf {
         if (!m_binReader.read(h.e_phnum))
             throw std::runtime_error("Error while reading e_phnum");
         if (!m_binReader.read(h.e_shentsize))
-            throw std::runtime_error("Error while reading e_shentoff");
+            throw std::runtime_error("Error while reading e_shentsize");
         if (!m_binReader.read(h.e_shnum))
             throw std::runtime_error("Error while reading e_shnum");
         if (!m_binReader.read(h.e_shstrndx))
@@ -101,7 +114,7 @@ namespace elf {
     }
 
 
-    void ElfParser::print_header(const ElfHeader& header) const {
+    void ElfParser::print_header(const ElfHeader& header) {
         std::cout << "ELF Header:\n";
         std::cout << "  Magic:   " << "7f 45 4c 46 ";
         std::cout << std::hex << std::setw(2) << std::setfill('0');
@@ -150,4 +163,127 @@ namespace elf {
         std::cout << "  Section header string table index: " << std::dec << header.e_shstrndx << '\n';
     }
 
+	std::vector<ElfSectionHeader> ElfParser::parse_section_headers() {
+		std::vector<ElfSectionHeader> s_headers;
+        s_headers.reserve(m_header.e_shnum);
+
+		parse_header();
+		m_binReader.seek(m_header.e_shoff);
+		for (std::size_t i = 0; i<m_header.e_shnum; ++i) {
+			ElfSectionHeader sh {};
+			parse_section_header(sh);
+			s_headers.push_back(sh);
+		}
+		return s_headers;
+	}
+
+    void ElfParser::parse_section_header(ElfSectionHeader& s_header) {
+        if (!m_binReader.read(s_header.sh_name)) 
+            throw std::runtime_error("Error while reading sh_name");
+        if (!m_binReader.read(s_header.sh_type)) 
+            throw std::runtime_error("Error while reading sh_type");
+
+        if (m_header.e_class == ElfClass::Elf32) {
+            std::uint32_t tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_flags");
+            s_header.sh_flags = tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_addr");
+            s_header.sh_addr = tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_offset");
+            s_header.sh_offset = tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_size");
+            s_header.sh_size = tmp;
+        } else {
+            if (!m_binReader.read(s_header.sh_flags))
+                throw std::runtime_error("Error while reading sh_flags");
+            if (!m_binReader.read(s_header.sh_addr))
+                throw std::runtime_error("Error while reading sh_addr");
+            if (!m_binReader.read(s_header.sh_offset))
+                throw std::runtime_error("Error while reading sh_offset");
+            if (!m_binReader.read(s_header.sh_size))
+                throw std::runtime_error("Error while reading sh_size");
+        }
+
+        if (!m_binReader.read(s_header.sh_link))
+            throw std::runtime_error("Error while reading sh_link");
+        if (!m_binReader.read(s_header.sh_info))
+            throw std::runtime_error("Error while reading sh_info");
+
+		if (m_header.e_class == ElfClass::Elf32) {
+			std::uint32_t tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_addralign");
+            s_header.sh_addralign = tmp;
+            if (!m_binReader.read(tmp))
+                throw std::runtime_error("Error while reading sh_entsize");
+            s_header.sh_entsize = tmp;
+		} else {
+			if (!m_binReader.read(s_header.sh_addralign))
+                throw std::runtime_error("Error while reading sh_addralign");
+            if (!m_binReader.read(s_header.sh_entsize))
+                throw std::runtime_error("Error while reading sh_entsize");
+		}
+    }
+
+
+	void ElfParser::print_section_headers(const std::vector<ElfSectionHeader>& s_headers) {
+		std::cout 	<< "There are "<< s_headers.size() << " section headers, starting at offset " 
+					<< "0x" << std::hex << m_header.e_shoff << ":\n\n";
+		std::cout 	<< "Section Headers:\n";
+		std::cout   << "  [Nr] Name              Type             Address           Offset\n";
+		std::cout   << "       Size              EntSize          Flags  Link  Info  Align\n";
+		for (std::size_t i = 0; i<s_headers.size(); ++i) {
+			std::cout << std::setfill(' ') << std::right;
+			std::cout << std::setw(7) << std::dec << "  ["  + std::to_string(i) + "] ";
+            std::cout << std::left;
+			std::cout << std::setw(18) << get_section_name(s_headers, s_headers.at(i).sh_name) + ' ';
+			std::cout << std::setw(16) << std::left << SHType_to_cstring(s_headers.at(i).sh_type) << ' ';
+            std::cout << std::right;
+            std::cout << std::setw(16) << std::setfill('0') << std::hex << s_headers.at(i).sh_addr << "  ";
+            std::cout << std::setw(8)  << std::setfill('0') << std::hex << s_headers.at(i).sh_offset << '\n';
+
+            std::cout << std::right;
+			std::cout << "       " << std::setw(16) << std::setfill('0') << std::hex << s_headers.at(i).sh_size << "  ";
+            std::cout << std::setw(16) << std::setfill('0') << std::hex << s_headers.at(i).sh_entsize;
+            std::cout << std::setfill(' ') << std::right;
+            std::cout << "  " << std::left << std::setw(2) << SHFlags_to_cstring(s_headers.at(i).sh_flags);
+            std::cout << std::right << std::setw(8) << std::dec << s_headers.at(i).sh_link;
+            std::cout << std::setw(6) << std::dec << s_headers.at(i).sh_info;
+            std::cout << std::setw(6) << std::dec << s_headers.at(i).sh_addralign << '\n';
+        }
+        
+        std::cout << "Key to Flags:\n";
+        std::cout << "  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),\n";
+        std::cout << "  L (link order), O (extra OS processing required), G (group), T (TLS),\n";
+        std::cout << "  C (compressed), x (unknown), o (OS specific), E (exclude),\n";
+        std::cout << "  D (mbind), l (large), p (processor specific)\n";
+
+	}
+
+    std::uint32_t ElfParser::get_section_name_offset(const std::vector<ElfSectionHeader>& sh_vec, std::uint32_t offset) const {
+        std::uint32_t total_offset = sh_vec.at(m_header.e_shstrndx).sh_offset + offset;
+        if (total_offset > m_binReader.size())
+            throw std::runtime_error("Error: the offset of a section name is larger than the file size");
+        return total_offset;
+    }
+
+    std::string ElfParser::get_section_name(const std::vector<ElfSectionHeader>& sh_vec, std::uint32_t sh_name_offset) {
+        auto old_offset = m_binReader.tell();
+        auto offset = get_section_name_offset(sh_vec, sh_name_offset);
+        m_binReader.seek(offset);
+        std::string name;
+        if (!m_binReader.read_string(name))
+            throw std::runtime_error("Error reading a section name");
+        m_binReader.seek(old_offset);
+        if (name.length() > 17) {
+            name = name.substr(0,12) + "[...]";
+        }
+        return name;
+    }
+
+    
 }

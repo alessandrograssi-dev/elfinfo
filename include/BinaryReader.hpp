@@ -46,6 +46,10 @@ public:
         m_file.seekg(offset, std::ios::beg);
     }
 
+    std::streamoff tell() {
+        return m_file.tellg();
+    }
+
     // Reads integral values and applies endianness if needed
     // Endianness handling will be extended in later commits.
     template<typename T>
@@ -64,9 +68,20 @@ public:
 
     bool read_bytes(char *buffer, std::size_t size) {
         m_file.read(buffer, size);
-        if (m_file.good())
-            return true;
-        return false;
+        return m_file.gcount() == static_cast<std::streamsize>(size);
+    }
+
+    bool read_string(std::string& s) {
+        s.clear();
+        char c;
+        do {
+            m_file.read(&c, 1);
+            if (!m_file.good())
+                return false;
+            if (c != '\0')
+                s += c;
+        } while (c != '\0');
+        return true;
     }
 
     inline void reset() {
@@ -83,7 +98,7 @@ private:
     Endianness m_file_endianness { Endianness::LittleEndian };
     Endianness m_machine_endianness {host_is_little_endian()};
 
-    constexpr Endianness host_is_little_endian() {
+    Endianness host_is_little_endian() {
         uint16_t x = 1;
         if (*reinterpret_cast<uint8_t*>(&x) == 1) {
             return Endianness::LittleEndian;
